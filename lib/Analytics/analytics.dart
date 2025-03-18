@@ -1,27 +1,180 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:fl_chart/fl_chart.dart'; // Add this dependency for charts
- 
- 
+import 'package:fl_chart/fl_chart.dart'; // Using 0.54.0 to avoid MediaQuery.boldTextOverride
 
-class AnalyticsPage extends StatelessWidget {
-  final Map<String, double> categorySpending = {
-    'Food': 150.0,
-    'Shopping': 540.0,
-    'Transport': 200.0,
-  };
+class AnalyticsPage extends StatefulWidget {
+  @override
+  _AnalyticsPageState createState() => _AnalyticsPageState();
+}
+
+class _AnalyticsPageState extends State<AnalyticsPage> {
+  String _selectedFilter = 'All'; // Default filter
+  DateTime? _customStartDate;
+  DateTime? _customEndDate;
+
+  // Sample transaction data
+  final List<Map<String, dynamic>> _sampleTransactions = [
+    {
+      'title': 'Shoes',
+      'description': 'Nike Sneakers',
+      'amount': -540.00,
+      'category': 'Shopping',
+      'date': DateTime(2024, 8, 26),
+      'icon': Icons.shopping_bag,
+      'iconColor': Colors.orange,
+    },
+    {
+      'title': 'Tshirt',
+      'description': '2 pcs',
+      'amount': -515.00,
+      'category': 'Shopping',
+      'date': DateTime(2024, 8, 23),
+      'icon': Icons.local_mall,
+      'iconColor': Colors.pink,
+    },
+    {
+      'title': 'Pants',
+      'description': '2 pcs',
+      'amount': -510.00,
+      'category': 'Shopping',
+      'date': DateTime(2024, 8, 23),
+      'icon': Icons.local_laundry_service,
+      'iconColor': Colors.yellow,
+    },
+    {
+      'title': 'Groceries',
+      'description': 'Weekly shopping',
+      'amount': -150.00,
+      'category': 'Food',
+      'date': DateTime(2024, 8, 20),
+      'icon': Icons.local_dining,
+      'iconColor': Colors.green,
+    },
+    {
+      'title': 'Bus Fare',
+      'description': 'Daily commute',
+      'amount': -200.00,
+      'category': 'Transport',
+      'date': DateTime(2024, 7, 15),
+      'icon': Icons.directions_car,
+      'iconColor': Colors.blue,
+    },
+  ];
+
+  // Compute spending per category based on the selected filter
+  Map<String, double> _computeCategorySpending() {
+    final now = DateTime.now();
+    DateTime startDate;
+    DateTime endDate = now;
+
+    switch (_selectedFilter) {
+      case 'Week':
+        startDate = now.subtract(const Duration(days: 7));
+        break;
+      case 'Month':
+        startDate = DateTime(now.year, now.month, 1);
+        break;
+      case 'Year':
+        startDate = DateTime(now.year, 1, 1);
+        break;
+      case 'Custom':
+        if (_customStartDate == null || _customEndDate == null) {
+          startDate = now.subtract(const Duration(days: 365)); // Fallback to 1 year
+          endDate = now;
+        } else {
+          startDate = _customStartDate!;
+          endDate = _customEndDate!;
+        }
+        break;
+      case 'Food':
+      case 'Shopping':
+      case 'Transport':
+        startDate = DateTime(2000); // Show all for category filters
+        endDate = now;
+        break;
+      default: // 'All'
+        startDate = DateTime(2000); // Show all
+        endDate = now;
+    }
+
+    // Filter transactions based on date range and category
+    final filteredTransactions = _sampleTransactions.where((transaction) {
+      final transactionDate = transaction['date'] as DateTime;
+      final withinDateRange = transactionDate.isAfter(startDate) && transactionDate.isBefore(endDate.add(const Duration(days: 1)));
+      if (_selectedFilter == 'Food' || _selectedFilter == 'Shopping' || _selectedFilter == 'Transport') {
+        return withinDateRange && transaction['category'] == _selectedFilter;
+      }
+      return withinDateRange;
+    }).toList();
+
+    // Compute spending per category
+    final Map<String, double> categorySpending = {};
+    for (var transaction in filteredTransactions) {
+      final category = transaction['category'] as String;
+      final amount = (transaction['amount'] as double).abs();
+      categorySpending[category] = (categorySpending[category] ?? 0) + amount;
+    }
+
+    return categorySpending;
+  }
+
+  // Filter transactions for the list based on the selected filter
+  List<Map<String, dynamic>> _filterTransactions() {
+    final now = DateTime.now();
+    DateTime startDate;
+    DateTime endDate = now;
+
+    switch (_selectedFilter) {
+      case 'Week':
+        startDate = now.subtract(const Duration(days: 7));
+        break;
+      case 'Month':
+        startDate = DateTime(now.year, now.month, 1);
+        break;
+      case 'Year':
+        startDate = DateTime(now.year, 1, 1);
+        break;
+      case 'Custom':
+        if (_customStartDate == null || _customEndDate == null) {
+          startDate = now.subtract(const Duration(days: 365));
+          endDate = now;
+        } else {
+          startDate = _customStartDate!;
+          endDate = _customEndDate!;
+        }
+        break;
+      case 'Food':
+      case 'Shopping':
+      case 'Transport':
+        startDate = DateTime(2000);
+        endDate = now;
+        break;
+      default: // 'All'
+        startDate = DateTime(2000);
+        endDate = now;
+    }
+
+    return _sampleTransactions.where((transaction) {
+      final transactionDate = transaction['date'] as DateTime;
+      final withinDateRange = transactionDate.isAfter(startDate) && transactionDate.isBefore(endDate.add(const Duration(days: 1)));
+      if (_selectedFilter == 'Food' || _selectedFilter == 'Shopping' || _selectedFilter == 'Transport') {
+        return withinDateRange && transaction['category'] == _selectedFilter;
+      }
+      return withinDateRange;
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final categorySpending = _computeCategorySpending();
+    final filteredTransactions = _filterTransactions();
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Expense'),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.blue),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -31,95 +184,151 @@ class AnalyticsPage extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Day',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = 'Week';
+                    });
+                  },
+                  child: Text(
+                    'Week',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _selectedFilter == 'Week' ? Colors.black : Colors.grey,
+                      fontWeight: _selectedFilter == 'Week' ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
                 ),
-                Row(
-                  children: const [
-                    Text(
-                      'Week',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = 'Month';
+                    });
+                  },
+                  child: Text(
+                    'Month',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _selectedFilter == 'Month' ? Colors.black : Colors.grey,
+                      fontWeight: _selectedFilter == 'Month' ? FontWeight.bold : FontWeight.normal,
                     ),
-                    SizedBox(width: 16),
-                    Text(
-                      'Month',
-                      style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = 'Year';
+                    });
+                  },
+                  child: Text(
+                    'Year',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _selectedFilter == 'Year' ? Colors.black : Colors.grey,
+                      fontWeight: _selectedFilter == 'Year' ? FontWeight.bold : FontWeight.normal,
                     ),
-                    SizedBox(width: 16),
-                    Icon(Icons.calendar_today, color: Colors.grey),
-                  ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.calendar_today, color: Colors.grey),
+                  onPressed: () async {
+                    final pickedRange = await showDateRangePicker(
+                      context: context,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                      initialDateRange: _customStartDate != null && _customEndDate != null
+                          ? DateTimeRange(start: _customStartDate!, end: _customEndDate!)
+                          : null,
+                    );
+                    if (pickedRange != null) {
+                      setState(() {
+                        _customStartDate = pickedRange.start;
+                        _customEndDate = pickedRange.end;
+                        _selectedFilter = 'Custom';
+                      });
+                    }
+                  },
                 ),
               ],
             ),
             const SizedBox(height: 20),
             SizedBox(
               height: 200,
-              child: LineChart(
-                LineChartData(
-                  gridData:   FlGridData(show: false),
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceAround,
+                  barGroups: categorySpending.entries.toList().asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final category = entry.value.key;
+                    final amount = entry.value.value;
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: amount,
+                          color: _getColorForCategory(category),
+                          width: 20,
+                          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                        ),
+                      ],
+                      showingTooltipIndicators: [0],
+                    );
+                  }).toList(),
                   titlesData: FlTitlesData(
                     bottomTitles: AxisTitles(
                       sideTitles: SideTitles(
                         showTitles: true,
-                        reservedSize: 22,
+                        reservedSize: 30,
                         getTitlesWidget: (value, meta) {
-                          const style = TextStyle(
-                            color: Colors.black,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12,
-                          );
-                          Widget text;
-                          switch (value.toInt()) {
-                            case 0:
-                              text = const Text('Jun', style: style);
-                              break;
-                            case 1:
-                              text = const Text('Jul', style: style);
-                              break;
-                            case 2:
-                              text = const Text('Aug', style: style);
-                              break;
-                            case 3:
-                              text = const Text('Sept', style: style);
-                              break;
-                            default:
-                              text = const Text('', style: style);
-                              break;
-                          }
+                          final category = categorySpending.keys.elementAt(value.toInt());
                           return SideTitleWidget(
                             axisSide: meta.axisSide,
                             space: 8.0,
-                            child: text,
+                            child: Text(
+                              category,
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
                           );
                         },
-                        interval: 1,
                       ),
                     ),
                     leftTitles: AxisTitles(
-                      sideTitles: SideTitles(showTitles: false),
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        reservedSize: 40,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '\$${value.toInt()}',
+                            style: const TextStyle(
+                              color: Colors.black,
+                              fontSize: 12,
+                            ),
+                          );
+                        },
+                      ),
                     ),
+                    topTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
                   ),
                   borderData: FlBorderData(show: false),
-                  lineBarsData: [
-                    LineChartBarData(
-                      spots: [
-                        const FlSpot(0, 100),
-                        const FlSpot(1, 130),
-                        const FlSpot(2, 170),
-                        const FlSpot(3, 140),
-                      ],
-                      isCurved: true,
-                      color: Colors.red,
-                      barWidth: 2,
-                      dotData:   FlDotData(show: false),
-                      belowBarData: BarAreaData(show: true, color: Colors.red.withOpacity(0.2)),
+                  gridData:   FlGridData(show: false),
+                  barTouchData: BarTouchData(
+                    enabled: true,
+                    touchTooltipData: BarTouchTooltipData(
+                      tooltipBgColor: Colors.grey.withOpacity(0.8),
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        final category = categorySpending.keys.elementAt(group.x.toInt());
+                        return BarTooltipItem(
+                          '\$${(rod.toY).toStringAsFixed(2)}',
+                          const TextStyle(color: Colors.white),
+                        );
+                      },
                     ),
-                  ],
-                  minX: 0,
-                  maxX: 3,
-                  minY: 0,
-                  maxY: 200,
+                  ),
                 ),
               ),
             ),
@@ -131,54 +340,109 @@ class AnalyticsPage extends StatelessWidget {
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: const [
-                Text('All', style: TextStyle(fontSize: 16, color: Colors.grey)),
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedFilter = 'All';
+                    });
+                  },
+                  child: Text(
+                    'All',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _selectedFilter == 'All' ? Colors.black : Colors.grey,
+                      fontWeight: _selectedFilter == 'All' ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ),
                 Row(
                   children: [
-                    Text('Food', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                    SizedBox(width: 16),
-                    Text('Shopping', style: TextStyle(fontSize: 16, color: Colors.grey)),
-                    SizedBox(width: 16),
-                    Text('Transport', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedFilter = 'Food';
+                        });
+                      },
+                      child: Text(
+                        'Food',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: _selectedFilter == 'Food' ? Colors.black : Colors.grey,
+                          fontWeight: _selectedFilter == 'Food' ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedFilter = 'Shopping';
+                        });
+                      },
+                      child: Text(
+                        'Shopping',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: _selectedFilter == 'Shopping' ? Colors.black : Colors.grey,
+                          fontWeight: _selectedFilter == 'Shopping' ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedFilter = 'Transport';
+                        });
+                      },
+                      child: Text(
+                        'Transport',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: _selectedFilter == 'Transport' ? Colors.black : Colors.grey,
+                          fontWeight: _selectedFilter == 'Transport' ? FontWeight.bold : FontWeight.normal,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ],
             ),
             const SizedBox(height: 10),
             Expanded(
-              child: ListView(
-                children: [
-                  _buildTransactionCard(
-                    icon: Icons.shopping_bag,
-                    iconColor: Colors.orange,
-                    title: 'Shoes',
-                    description: 'Nike Sneakers',
-                    amount: -540.00,
-                    date: 'Aug 26',
-                  ),
-                  _buildTransactionCard(
-                    icon: Icons.local_mall,
-                    iconColor: Colors.pink,
-                    title: 'Tshirt',
-                    description: '2 pcs',
-                    amount: -515.00,
-                    date: 'Aug 23',
-                  ),
-                  _buildTransactionCard(
-                    icon: Icons.local_laundry_service,
-                    iconColor: Colors.yellow,
-                    title: 'Pants',
-                    description: '2 pcs',
-                    amount: -510.00,
-                    date: 'Aug 23',
-                  ),
-                ],
+              child: ListView.builder(
+                itemCount: filteredTransactions.length,
+                itemBuilder: (context, index) {
+                  final transaction = filteredTransactions[index];
+                  return _buildTransactionCard(
+                    icon: transaction['icon'] as IconData,
+                    iconColor: transaction['iconColor'] as Color,
+                    title: transaction['title'] as String,
+                    description: transaction['description'] as String,
+                    amount: transaction['amount'] as double,
+                    date: transaction['date'].toString().split(' ')[0], // Format date
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Color _getColorForCategory(String category) {
+    switch (category) {
+      case 'Shopping':
+        return Colors.orange;
+      case 'Food':
+        return Colors.green;
+      case 'Transport':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
   }
 
   Widget _buildTransactionCard({
@@ -230,9 +494,6 @@ class AnalyticsPage extends StatelessWidget {
           ],
           icon: const Icon(Icons.more_vert),
         ),
-        onTap: () {
-          // Handle tap if needed
-        },
       ),
     );
   }
@@ -559,4 +820,3 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
     );
   }
 }
- 

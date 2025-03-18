@@ -96,10 +96,7 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
         title: const Text('Category Management'),
         backgroundColor: Colors.white,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.blue),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+        
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
