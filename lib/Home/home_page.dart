@@ -1,17 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:google_nav_bar/google_nav_bar.dart';
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: DashboardScreen(),
-    );
-  }
-}
 
 class DashboardScreen extends StatefulWidget {
   @override
@@ -49,15 +38,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
         "color": Colors.green,
         "date": "Aug 24",
       },
-       {
-        "name": "Food",
+      {
+        "name": "Payment",
         "desc": "Transfer from Audrey",
         "amount": 190.00,
         "icon": Icons.attach_money,
         "color": Colors.green,
         "date": "Aug 24",
       },
-       {
+      {
         "name": "Clothes",
         "desc": "Transfer from Audrey",
         "amount": 190.00,
@@ -68,16 +57,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
     ],
   };
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white, // AppBar & Body are now the same color
+      backgroundColor: Colors.white,
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -112,7 +96,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 10),
             const Text(
               "\$4,586.00",
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold,color: Colors.blue),
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.blue),
             ),
             const SizedBox(height: 5),
             const Text(
@@ -120,14 +104,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
               style: TextStyle(fontSize: 16, color: Colors.black54),
             ),
             const SizedBox(height: 20),
-
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildBalanceCard(
                   "Income",
                   2450.00,
-                 Icons.move_up,
+                  Icons.move_up,
                   const Color.fromARGB(255, 6, 210, 111),
                 ),
                 _buildBalanceCard(
@@ -139,116 +122,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
             const SizedBox(height: 20),
-
             const Align(
               alignment: Alignment.centerLeft,
               child: Text(
                 "Recent Transactions",
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color: Color.fromARGB(255, 82, 80, 80)),
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color.fromARGB(255, 82, 80, 80)),
               ),
             ),
             const SizedBox(height: 10),
-
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.only(top: 5),
-                children:
-                    transactionsByDate.entries.map((entry) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            entry.key,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 5),
-                          ...entry.value.map(
-                            (transaction) => _buildTransactionCard(
-                              transaction["name"],
-                              transaction["desc"],
-                              transaction["amount"],
-                              transaction["icon"],
-                              transaction["color"],
-                              transaction["date"],
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                        ],
-                      );
-                    }).toList(),
+                children: transactionsByDate.entries.map((entry) {
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      ...entry.value.map(
+                        (transaction) => _buildTransactionCard(
+                          transaction["name"],
+                          transaction["desc"],
+                          transaction["amount"],
+                          transaction["icon"],
+                          transaction["color"],
+                          transaction["date"],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  );
+                }).toList(),
               ),
             ),
           ],
         ),
       ),
-
-      // Custom Bottom Navigation Bar with Floating Add Button
-      bottomNavigationBar: Stack(
-        alignment: Alignment.bottomCenter,
-        children: [
-          Container(
-            height: 70,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(Icons.home, "Home", 0),
-                _buildNavItem(Icons.analytics, "Analytics", 1),
-                const SizedBox(width: 60), // Space for Floating Add Button
-                _buildNavItem(Icons.category, "Categories", 3),
-                _buildNavItem(Icons.person, "Accounts", 4),
-              ],
-            ),
-          ),
-
-          // Floating Action Button directly inside Stack without SafeArea or Padding
-          Positioned(
-            bottom:
-                20, // Adjusted the bottom margin slightly to fit the screen properly
-            child: FloatingActionButton(
-              onPressed: () {},
-              backgroundColor: Colors.blue,
-              elevation: 4,
-              shape: const CircleBorder(),
-              child: const Icon(Icons.add, size: 32, color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, String label, int index) {
-    return GestureDetector(
-      onTap: () => _onItemTapped(index),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            color: _selectedIndex == index ? Colors.blue : Colors.grey,
-            size: 28,
-          ),
-          if (_selectedIndex == index)
-            Text(
-              label,
-              style: const TextStyle(fontSize: 12, color: Colors.blue),
-            ),
-        ],
-      ),
+     
     );
   }
 
@@ -283,7 +199,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   title,
                   style: const TextStyle(fontSize: 14, color: Colors.white),
                 ),
-                SizedBox(height: 7,),
+                const SizedBox(height: 7),
                 Text(
                   "-\$${amount.toStringAsFixed(2)}",
                   style: const TextStyle(
