@@ -35,7 +35,9 @@ class Transaction {
 }
 
 class NotificationsPage extends StatefulWidget {
-  const NotificationsPage({super.key});
+  final ValueChanged<bool>? onHasNotificationsChanged; // Callback to notify parent of notification state
+
+  const NotificationsPage({super.key, this.onHasNotificationsChanged});
 
   @override
   State<NotificationsPage> createState() => _NotificationsPageState();
@@ -111,6 +113,11 @@ class _NotificationsPageState extends State<NotificationsPage> {
     final todayTransactions = transactions
         .where((transaction) => transaction.date == today)
         .toList();
+
+    // Notify parent widget of notification state
+    if (widget.onHasNotificationsChanged != null) {
+      widget.onHasNotificationsChanged!(todayTransactions.isNotEmpty);
+    }
 
     if (todayTransactions.isNotEmpty) {
       // Trigger notification for each transaction
