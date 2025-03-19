@@ -110,13 +110,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildBalanceCard(
                   "Income",
                   2450.00,
-                  Icons.move_up,
+                  Icons.arrow_upward,
                   const Color.fromARGB(255, 6, 210, 111),
                 ),
                 _buildBalanceCard(
                   "Expense",
                   710.00,
-                  Icons.move_down,
+                  Icons.arrow_downward,
                   Colors.redAccent,
                 ),
               ],

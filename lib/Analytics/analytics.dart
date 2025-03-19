@@ -1,6 +1,8 @@
+// analytics.dart
 import 'package:flutter/material.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
-import 'package:fl_chart/fl_chart.dart'; // Using 0.54.0 to avoid MediaQuery.boldTextOverride
+import 'package:fl_chart/fl_chart.dart';
+import 'package:provider/provider.dart';
+import '../provider/transactionProvider.dart';
 
 class AnalyticsPage extends StatefulWidget {
   @override
@@ -12,57 +14,10 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   DateTime? _customStartDate;
   DateTime? _customEndDate;
 
-  // Sample transaction data
-  final List<Map<String, dynamic>> _sampleTransactions = [
-    {
-      'title': 'Shoes',
-      'description': 'Nike Sneakers',
-      'amount': -540.00,
-      'category': 'Shopping',
-      'date': DateTime(2024, 8, 26),
-      'icon': Icons.shopping_bag,
-      'iconColor': Colors.orange,
-    },
-    {
-      'title': 'Tshirt',
-      'description': '2 pcs',
-      'amount': -515.00,
-      'category': 'Shopping',
-      'date': DateTime(2024, 8, 23),
-      'icon': Icons.local_mall,
-      'iconColor': Colors.pink,
-    },
-    {
-      'title': 'Pants',
-      'description': '2 pcs',
-      'amount': -510.00,
-      'category': 'Shopping',
-      'date': DateTime(2024, 8, 23),
-      'icon': Icons.local_laundry_service,
-      'iconColor': Colors.yellow,
-    },
-    {
-      'title': 'Groceries',
-      'description': 'Weekly shopping',
-      'amount': -150.00,
-      'category': 'Food',
-      'date': DateTime(2024, 8, 20),
-      'icon': Icons.local_dining,
-      'iconColor': Colors.green,
-    },
-    {
-      'title': 'Bus Fare',
-      'description': 'Daily commute',
-      'amount': -200.00,
-      'category': 'Transport',
-      'date': DateTime(2024, 7, 15),
-      'icon': Icons.directions_car,
-      'iconColor': Colors.blue,
-    },
-  ];
-
   // Compute spending per category based on the selected filter
-  Map<String, double> _computeCategorySpending() {
+  Map<String, double> _computeCategorySpending(
+    List<Map<String, dynamic>> transactions,
+  ) {
     final now = DateTime.now();
     DateTime startDate;
     DateTime endDate = now;
@@ -78,48 +33,47 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         startDate = DateTime(now.year, 1, 1);
         break;
       case 'Custom':
-        if (_customStartDate == null || _customEndDate == null) {
-          startDate = now.subtract(const Duration(days: 365)); // Fallback to 1 year
-          endDate = now;
-        } else {
-          startDate = _customStartDate!;
-          endDate = _customEndDate!;
-        }
+        startDate = _customStartDate ?? now.subtract(const Duration(days: 365));
+        endDate = _customEndDate ?? now;
         break;
-      case 'Food':
-      case 'Shopping':
-      case 'Transport':
-        startDate = DateTime(2000); // Show all for category filters
+      case 'Income':
+      case 'Expense':
+        startDate = DateTime(2000);
         endDate = now;
         break;
       default: // 'All'
-        startDate = DateTime(2000); // Show all
+        startDate = DateTime(2000);
         endDate = now;
     }
 
-    // Filter transactions based on date range and category
-    final filteredTransactions = _sampleTransactions.where((transaction) {
-      final transactionDate = transaction['date'] as DateTime;
-      final withinDateRange = transactionDate.isAfter(startDate) && transactionDate.isBefore(endDate.add(const Duration(days: 1)));
-      if (_selectedFilter == 'Food' || _selectedFilter == 'Shopping' || _selectedFilter == 'Transport') {
-        return withinDateRange && transaction['category'] == _selectedFilter;
-      }
-      return withinDateRange;
-    }).toList();
+    final filteredTransactions =
+        transactions.where((t) {
+          final date = DateTime.parse(t['date']);
+          final inRange =
+              date.isAfter(startDate) &&
+              date.isBefore(endDate.add(const Duration(days: 1)));
+          return _selectedFilter == 'All' ||
+                  _selectedFilter == 'Week' ||
+                  _selectedFilter == 'Month' ||
+                  _selectedFilter == 'Year' ||
+                  _selectedFilter == 'Custom'
+              ? inRange
+              : inRange && t['type'] == _selectedFilter;
+        }).toList();
 
-    // Compute spending per category
-    final Map<String, double> categorySpending = {};
-    for (var transaction in filteredTransactions) {
-      final category = transaction['category'] as String;
-      final amount = (transaction['amount'] as double).abs();
-      categorySpending[category] = (categorySpending[category] ?? 0) + amount;
+    final Map<String, double> spending = {};
+    for (var t in filteredTransactions) {
+      final category = t['category'] ?? 'Uncategorized';
+      final amount = (t['amount'] as double).abs();
+      spending[category] = (spending[category] ?? 0) + amount;
     }
-
-    return categorySpending;
+    return spending;
   }
 
-  // Filter transactions for the list based on the selected filter
-  List<Map<String, dynamic>> _filterTransactions() {
+  // Filter transactions for the list
+  List<Map<String, dynamic>> _filterTransactions(
+    List<Map<String, dynamic>> transactions,
+  ) {
     final now = DateTime.now();
     DateTime startDate;
     DateTime endDate = now;
@@ -135,17 +89,11 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         startDate = DateTime(now.year, 1, 1);
         break;
       case 'Custom':
-        if (_customStartDate == null || _customEndDate == null) {
-          startDate = now.subtract(const Duration(days: 365));
-          endDate = now;
-        } else {
-          startDate = _customStartDate!;
-          endDate = _customEndDate!;
-        }
+        startDate = _customStartDate ?? now.subtract(const Duration(days: 365));
+        endDate = _customEndDate ?? now;
         break;
-      case 'Food':
-      case 'Shopping':
-      case 'Transport':
+      case 'Income':
+      case 'Expense':
         startDate = DateTime(2000);
         endDate = now;
         break;
@@ -154,286 +102,243 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
         endDate = now;
     }
 
-    return _sampleTransactions.where((transaction) {
-      final transactionDate = transaction['date'] as DateTime;
-      final withinDateRange = transactionDate.isAfter(startDate) && transactionDate.isBefore(endDate.add(const Duration(days: 1)));
-      if (_selectedFilter == 'Food' || _selectedFilter == 'Shopping' || _selectedFilter == 'Transport') {
-        return withinDateRange && transaction['category'] == _selectedFilter;
-      }
-      return withinDateRange;
+    return transactions.where((t) {
+      final date = DateTime.parse(t['date']);
+      final inRange =
+          date.isAfter(startDate) &&
+          date.isBefore(endDate.add(const Duration(days: 1)));
+      return _selectedFilter == 'All' ||
+              _selectedFilter == 'Week' ||
+              _selectedFilter == 'Month' ||
+              _selectedFilter == 'Year' ||
+              _selectedFilter == 'Custom'
+          ? inRange
+          : inRange && t['type'] == _selectedFilter;
     }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    final categorySpending = _computeCategorySpending();
-    final filteredTransactions = _filterTransactions();
+    return Consumer<TransactionProvider>(
+      builder: (context, provider, child) {
+        final categorySpending = _computeCategorySpending(
+          provider.transactions,
+        );
+        final filteredTransactions = _filterTransactions(provider.transactions);
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Expense'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Expense'),
+            backgroundColor: Colors.white,
+            elevation: 0,
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedFilter = 'Week';
-                    });
-                  },
-                  child: Text(
-                    'Week',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _selectedFilter == 'Week' ? Colors.black : Colors.grey,
-                      fontWeight: _selectedFilter == 'Week' ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedFilter = 'Month';
-                    });
-                  },
-                  child: Text(
-                    'Month',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _selectedFilter == 'Month' ? Colors.black : Colors.grey,
-                      fontWeight: _selectedFilter == 'Month' ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedFilter = 'Year';
-                    });
-                  },
-                  child: Text(
-                    'Year',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _selectedFilter == 'Year' ? Colors.black : Colors.grey,
-                      fontWeight: _selectedFilter == 'Year' ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.calendar_today, color: Colors.grey),
-                  onPressed: () async {
-                    final pickedRange = await showDateRangePicker(
-                      context: context,
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                      initialDateRange: _customStartDate != null && _customEndDate != null
-                          ? DateTimeRange(start: _customStartDate!, end: _customEndDate!)
-                          : null,
-                    );
-                    if (pickedRange != null) {
-                      setState(() {
-                        _customStartDate = pickedRange.start;
-                        _customEndDate = pickedRange.end;
-                        _selectedFilter = 'Custom';
-                      });
-                    }
-                  },
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            SizedBox(
-              height: 200,
-              child: BarChart(
-                BarChartData(
-                  alignment: BarChartAlignment.spaceAround,
-                  barGroups: categorySpending.entries.toList().asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final category = entry.value.key;
-                    final amount = entry.value.value;
-                    return BarChartGroupData(
-                      x: index,
-                      barRods: [
-                        BarChartRodData(
-                          toY: amount,
-                          color: _getColorForCategory(category),
-                          width: 20,
-                          borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                        ),
-                      ],
-                      showingTooltipIndicators: [0],
-                    );
-                  }).toList(),
-                  titlesData: FlTitlesData(
-                    bottomTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 30,
-                        getTitlesWidget: (value, meta) {
-                          final category = categorySpending.keys.elementAt(value.toInt());
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            space: 8.0,
-                            child: Text(
-                              category,
-                              style: const TextStyle(
-                                color: Colors.black,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    leftTitles: AxisTitles(
-                      sideTitles: SideTitles(
-                        showTitles: true,
-                        reservedSize: 40,
-                        getTitlesWidget: (value, meta) {
-                          return Text(
-                            '\$${value.toInt()}',
-                            style: const TextStyle(
-                              color: Colors.black,
-                              fontSize: 12,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    topTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                    rightTitles:   AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  ),
-                  borderData: FlBorderData(show: false),
-                  gridData:   FlGridData(show: false),
-                  barTouchData: BarTouchData(
-                    enabled: true,
-                    touchTooltipData: BarTouchTooltipData(
-                      tooltipBgColor: Colors.grey.withOpacity(0.8),
-                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                        final category = categorySpending.keys.elementAt(group.x.toInt());
-                        return BarTooltipItem(
-                          '\$${(rod.toY).toStringAsFixed(2)}',
-                          const TextStyle(color: Colors.white),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Detail Transactions',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
-            ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedFilter = 'All';
-                    });
-                  },
-                  child: Text(
-                    'All',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: _selectedFilter == 'All' ? Colors.black : Colors.grey,
-                      fontWeight: _selectedFilter == 'All' ? FontWeight.bold : FontWeight.normal,
-                    ),
-                  ),
-                ),
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedFilter = 'Food';
-                        });
-                      },
-                      child: Text(
-                        'Food',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: _selectedFilter == 'Food' ? Colors.black : Colors.grey,
-                          fontWeight: _selectedFilter == 'Food' ? FontWeight.bold : FontWeight.normal,
-                        ),
+                    _buildFilterButton('Week'),
+                    _buildFilterButton('Month'),
+                    _buildFilterButton('Year'),
+                    IconButton(
+                      icon: const Icon(
+                        Icons.calendar_today,
+                        color: Colors.grey,
                       ),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedFilter = 'Shopping';
-                        });
+                      onPressed: () async {
+                        final range = await showDateRangePicker(
+                          context: context,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                          initialDateRange:
+                              _customStartDate != null && _customEndDate != null
+                                  ? DateTimeRange(
+                                    start: _customStartDate!,
+                                    end: _customEndDate!,
+                                  )
+                                  : null,
+                        );
+                        if (range != null) {
+                          setState(() {
+                            _customStartDate = range.start;
+                            _customEndDate = range.end;
+                            _selectedFilter = 'Custom';
+                          });
+                        }
                       },
-                      child: Text(
-                        'Shopping',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: _selectedFilter == 'Shopping' ? Colors.black : Colors.grey,
-                          fontWeight: _selectedFilter == 'Shopping' ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedFilter = 'Transport';
-                        });
-                      },
-                      child: Text(
-                        'Transport',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: _selectedFilter == 'Transport' ? Colors.black : Colors.grey,
-                          fontWeight: _selectedFilter == 'Transport' ? FontWeight.bold : FontWeight.normal,
-                        ),
-                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 20),
+                SizedBox(
+                  height: 200,
+                  child: BarChart(
+                    BarChartData(
+                      alignment: BarChartAlignment.spaceAround,
+                      barGroups:
+                          categorySpending.entries.map((e) {
+                            final index = categorySpending.keys
+                                .toList()
+                                .indexOf(e.key);
+                            return BarChartGroupData(
+                              x: index,
+                              barRods: [
+                                BarChartRodData(
+                                  toY: e.value,
+                                  color: _getColorForCategory(e.key),
+                                  width: 20,
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(4),
+                                  ),
+                                ),
+                              ],
+                              showingTooltipIndicators: [0],
+                            );
+                          }).toList(),
+                      titlesData: FlTitlesData(
+                        bottomTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 30,
+                            getTitlesWidget: (value, meta) {
+                              final category = categorySpending.keys.elementAt(
+                                value.toInt(),
+                              );
+                              return SideTitleWidget(
+                                axisSide: meta.axisSide,
+                                space: 8.0,
+                                child: Text(
+                                  category,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        leftTitles: AxisTitles(
+                          sideTitles: SideTitles(
+                            showTitles: true,
+                            reservedSize: 40,
+                            getTitlesWidget:
+                                (value, meta) => Text(
+                                  '\$${value.toInt()}',
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 12,
+                                  ),
+                                ),
+                          ),
+                        ),
+                        topTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                        rightTitles: AxisTitles(
+                          sideTitles: SideTitles(showTitles: false),
+                        ),
+                      ),
+                      borderData: FlBorderData(show: false),
+                      gridData: FlGridData(show: false),
+                      barTouchData: BarTouchData(
+                        enabled: true,
+                        touchTooltipData: BarTouchTooltipData(
+                          tooltipBgColor: Colors.grey.withOpacity(0.8),
+                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                            final category = categorySpending.keys.elementAt(
+                              group.x.toInt(),
+                            );
+                            return BarTooltipItem(
+                              '\$${rod.toY.toStringAsFixed(2)}',
+                              const TextStyle(color: Colors.white),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Detail Transactions',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildFilterButton('All'),
+                    Row(
+                      children: [
+                        _buildFilterButton('Income'),
+                        const SizedBox(width: 16),
+                        _buildFilterButton('Expense'),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Expanded(
+                  child: ListView.builder(
+                    itemCount: filteredTransactions.length,
+                    itemBuilder: (context, index) {
+                      final t = filteredTransactions[index];
+                      return _buildTransactionCard(
+                        icon: _getIconForCategory(t['category']),
+                        iconColor: _getColorForCategory(t['category']),
+                        title: t['title'],
+                        description:
+                            t['description'] ??
+                            '${t['type']} - ${t['category'] ?? 'Uncategorized'}',
+                        amount: t['amount'],
+                        date: t['date'],
+                        onEdit:
+                            () => provider.showTransactionDialog(
+                              context,
+                              index: provider.transactions.indexOf(t),
+                            ),
+                        onDelete:
+                            () => provider.deleteTransaction(
+                              provider.transactions.indexOf(t),
+                            ),
+                      );
+                    },
+                  ),
+                ),
               ],
             ),
-            const SizedBox(height: 10),
-            Expanded(
-              child: ListView.builder(
-                itemCount: filteredTransactions.length,
-                itemBuilder: (context, index) {
-                  final transaction = filteredTransactions[index];
-                  return _buildTransactionCard(
-                    icon: transaction['icon'] as IconData,
-                    iconColor: transaction['iconColor'] as Color,
-                    title: transaction['title'] as String,
-                    description: transaction['description'] as String,
-                    amount: transaction['amount'] as double,
-                    date: transaction['date'].toString().split(' ')[0], // Format date
-                  );
-                },
-              ),
-            ),
-          ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFilterButton(String filter) {
+    return GestureDetector(
+      onTap: () => setState(() => _selectedFilter = filter),
+      child: Text(
+        filter,
+        style: TextStyle(
+          fontSize: 16,
+          color: _selectedFilter == filter ? Colors.black : Colors.grey,
+          fontWeight:
+              _selectedFilter == filter ? FontWeight.bold : FontWeight.normal,
         ),
       ),
     );
   }
 
-  Color _getColorForCategory(String category) {
-    switch (category) {
+  Color _getColorForCategory(String? category) {
+    switch (category ?? 'Uncategorized') {
       case 'Shopping':
         return Colors.orange;
       case 'Food':
@@ -445,302 +350,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     }
   }
 
-  Widget _buildTransactionCard({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String description,
-    required double amount,
-    required String date,
-  }) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: iconColor.withOpacity(0.2),
-          child: Icon(icon, color: iconColor),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-        ),
-        subtitle: Text(
-          description,
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'edit') {
-              // Implement edit logic here
-            } else if (value == 'delete') {
-              // Implement delete logic here
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'edit',
-              child: ListTile(
-                leading: Icon(Icons.edit),
-                title: Text('Edit'),
-              ),
-            ),
-            const PopupMenuItem<String>(
-              value: 'delete',
-              child: ListTile(
-                leading: Icon(Icons.delete),
-                title: Text('Delete'),
-              ),
-            ),
-          ],
-          icon: const Icon(Icons.more_vert),
-        ),
-      ),
-    );
-  }
-}
-
-class TransactionManagementPage extends StatefulWidget {
-  final List<String> categories;
-
-  const TransactionManagementPage({super.key, required this.categories});
-
-  @override
-  _TransactionManagementPageState createState() => _TransactionManagementPageState();
-}
-
-class _TransactionManagementPageState extends State<TransactionManagementPage> {
-  final List<Map<String, dynamic>> _transactions = [];
-  final _formKey = GlobalKey<FormState>();
-  final _titleController = TextEditingController();
-  final _amountController = TextEditingController();
-  String? _type = 'Expense';
-  String? _category;
-  DateTime? _date = DateTime.now();
-  int? _editingIndex;
-
-  // Add or update a transaction
-  void _saveTransaction() {
-    if (_formKey.currentState!.validate()) {
-      final title = _titleController.text;
-      final amount = double.parse(_amountController.text);
-      final transaction = {
-        'title': title,
-        'amount': _type == 'Income' ? amount : -amount,
-        'type': _type,
-        'category': _category,
-        'date': _date!.toIso8601String().split('T')[0],
-      };
-
-      setState(() {
-        if (_editingIndex != null) {
-          _transactions[_editingIndex!] = transaction;
-          _editingIndex = null;
-        } else {
-          _transactions.add(transaction);
-        }
-        _resetForm();
-      });
-      Navigator.of(context).pop();
-    }
-  }
-
-  // Edit a transaction
-  void _editTransaction(int index) {
-    final transaction = _transactions[index];
-    _titleController.text = transaction['title'];
-    _amountController.text = transaction['amount'].abs().toString();
-    _type = transaction['type'];
-    _category = transaction['category'];
-    _date = DateTime.parse(transaction['date']);
-    _editingIndex = index;
-    _showTransactionDialog(context);
-  }
-
-  // Delete a transaction
-  void _deleteTransaction(int index) {
-    setState(() {
-      _transactions.removeAt(index);
-    });
-  }
-
-  // Reset form fields
-  void _resetForm() {
-    _titleController.clear();
-    _amountController.clear();
-    _type = 'Expense';
-    _category = null;
-    _date = DateTime.now();
-    _editingIndex = null;
-  }
-
-  // Show dialog for adding or editing a transaction
-  void _showTransactionDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text(_editingIndex == null ? 'Add Transaction' : 'Edit Transaction'),
-          content: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: _titleController,
-                    decoration: const InputDecoration(labelText: 'Title'),
-                    validator: (value) => value!.isEmpty ? 'Enter a title' : null,
-                  ),
-                  TextFormField(
-                    controller: _amountController,
-                    decoration: const InputDecoration(labelText: 'Amount'),
-                    keyboardType: TextInputType.number,
-                    validator: (value) {
-                      if (value!.isEmpty) return 'Enter an amount';
-                      if (double.tryParse(value) == null) return 'Enter a valid number';
-                      return null;
-                    },
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: _type,
-                    items: ['Income', 'Expense']
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (value) => setState(() => _type = value),
-                    decoration: const InputDecoration(labelText: 'Type'),
-                  ),
-                  DropdownButtonFormField<String>(
-                    value: _category,
-                    items: widget.categories
-                        .map((e) => DropdownMenuItem(value: e, child: Text(e)))
-                        .toList(),
-                    onChanged: (value) => setState(() => _category = value),
-                    decoration: const InputDecoration(labelText: 'Category'),
-                    hint: const Text('Select a category'),
-                  ),
-                  InputDecorator(
-                    decoration: const InputDecoration(labelText: 'Date'),
-                    child: Row(
-                      children: [
-                        Text(_date!.toIso8601String().split('T')[0]),
-                        IconButton(
-                          icon: const Icon(Icons.calendar_today),
-                          onPressed: () async {
-                            final picked = await showDatePicker(
-                              context: context,
-                              initialDate: _date!,
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            );
-                            if (picked != null) setState(() => _date = picked);
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: _saveTransaction,
-              child: Text(_editingIndex == null ? 'Add' : 'Save'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _amountController.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Transaction Management'),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.blue),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Manage Your Transactions',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: _transactions.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'No transactions yet. Add one to get started!',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    )
-                  : ListView.builder(
-                      itemCount: _transactions.length,
-                      itemBuilder: (context, index) {
-                        final transaction = _transactions[index];
-                        return _buildTransactionCard(
-                          icon: _getIconForCategory(transaction['category']),
-                          iconColor: _getColorForCategory(transaction['category']),
-                          title: transaction['title'],
-                          description: '${transaction['type']} - ${transaction['category']}',
-                          amount: transaction['amount'],
-                          date: transaction['date'],
-                          onEdit: () => _editTransaction(index),
-                          onDelete: () => _deleteTransaction(index),
-                        );
-                      },
-                    ),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                onPressed: () => _showTransactionDialog(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  'Add New Transaction',
-                  style: TextStyle(fontSize: 16),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   IconData _getIconForCategory(String? category) {
-    switch (category) {
+    switch (category ?? 'Uncategorized') {
       case 'Shopping':
         return Icons.shopping_bag;
       case 'Food':
@@ -752,71 +363,326 @@ class _TransactionManagementPageState extends State<TransactionManagementPage> {
     }
   }
 
-  Color _getColorForCategory(String? category) {
-    switch (category) {
-      case 'Shopping':
-        return Colors.orange;
-      case 'Food':
+  Color _getColorForType(String? type) {
+    switch (type ?? 'Uncategorized') {
+      case 'Income':
         return Colors.green;
-      case 'Transport':
-        return Colors.blue;
+      case 'Expense':
+        return Colors.red;
       default:
-        return Colors.grey;
+        return const Color.fromARGB(255, 241, 97, 97); // Neutral fallback color
     }
   }
 
-  Widget _buildTransactionCard({
-    required IconData icon,
-    required Color iconColor,
-    required String title,
-    required String description,
-    required double amount,
-    required String date,
-    required VoidCallback onEdit,
-    required VoidCallback onDelete,
-  }) {
-    return Card(
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: iconColor.withOpacity(0.2),
-          child: Icon(icon, color: iconColor),
-        ),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-        ),
-        subtitle: Text(
-          description,
-          style: const TextStyle(fontSize: 14, color: Colors.grey),
-        ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (value) {
-            if (value == 'edit') {
-              onEdit();
-            } else if (value == 'delete') {
-              onDelete();
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'edit',
-              child: ListTile(
-                leading: Icon(Icons.edit),
-                title: Text('Edit'),
-              ),
-            ),
-            const PopupMenuItem<String>(
-              value: 'delete',
-              child: ListTile(
-                leading: Icon(Icons.delete),
-                title: Text('Delete'),
-              ),
-            ),
-          ],
-          icon: const Icon(Icons.more_vert),
-        ),
+ Widget _buildTransactionCard({
+  required IconData icon,
+  required Color iconColor,
+  required String title,
+  required String description,
+  required double amount,
+  required String date,
+  required VoidCallback onEdit,
+  required VoidCallback onDelete,
+}) {
+  final Color amountColor = _getColorForType(amount >= 0 ? 'Income' : 'Expense');
+
+  return Card(
+    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+    elevation: 2,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    child: ListTile(
+      leading: CircleAvatar(
+        backgroundColor: iconColor.withOpacity(0.2),
+        child: Icon(icon, color: iconColor),
       ),
+      title: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue[900], // Blue-black color for title
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Text(
+            '\$${amount.abs().toStringAsFixed(2)}',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: amountColor, // Color based on type (green/red)
+            ),
+          ),
+        ],
+      ),
+      subtitle: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            description,
+            style: const TextStyle(fontSize: 14, color: Colors.grey),
+          ),
+          const SizedBox(height: 2), // Reduced spacing for tighter layout
+          Text(
+            date,
+            style: const TextStyle(fontSize: 12, color: Colors.grey),
+          ),
+        ],
+      ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) {
+          if (value == 'edit') onEdit();
+          if (value == 'delete') onDelete();
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'edit',
+            child: ListTile(
+              leading: Icon(Icons.edit),
+              title: Text('Edit'),
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'delete',
+            child: ListTile(
+              leading: Icon(Icons.delete),
+              title: Text('Delete'),
+            ),
+          ),
+        ],
+        icon: const Icon(Icons.more_vert),
+      ),
+    ),
+  );
+}
+ 
+}
+
+class TransactionManagementPage extends StatefulWidget {
+  const TransactionManagementPage({super.key});
+
+  @override
+  TransactionManagementPageState createState() =>
+      TransactionManagementPageState();
+}
+
+class TransactionManagementPageState extends State<TransactionManagementPage> {
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<TransactionProvider>(
+      builder: (context, provider, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('Transaction Management'),
+            backgroundColor: Colors.white,
+            elevation: 0,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.blue),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+          ),
+          body: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Manage Your Transactions',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Expanded(
+                  child:
+                      provider.transactions.isEmpty
+                          ? const Center(
+                            child: Text(
+                              'No transactions yet. Add one to get started!',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          )
+                          : ListView.builder(
+                            itemCount: provider.transactions.length,
+                            itemBuilder: (context, index) {
+                              final t = provider.transactions[index];
+                              return _buildTransactionCard(
+                                icon: _getIconForCategory(t['category']),
+                                iconColor: _getColorForType(t['type']),
+                                title: t['title'],
+                                description:
+                                    t['description'] ??
+                                    '${t['type']} - ${t['category'] ?? 'Uncategorized'}',
+                                amount: t['amount'],
+                                date: t['date'],
+                                onEdit:
+                                    () => provider.showTransactionDialog(
+                                      context,
+                                      index: index,
+                                    ),
+                                onDelete:
+                                    () => provider.deleteTransaction(index),
+                              );
+                            },
+                          ),
+                ),
+                const SizedBox(height: 20),
+                Center(
+                  child: ElevatedButton(
+                    onPressed: () => provider.showTransactionDialog(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    child: const Text(
+                      'Add New Transaction',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
+
+  IconData _getIconForCategory(String? category) {
+    switch (category ?? 'Uncategorized') {
+      case 'Shopping':
+        return Icons.shopping_bag;
+      case 'Food':
+        return Icons.local_dining;
+      case 'Transport':
+        return Icons.directions_car;
+      default:
+        return Icons.category;
+    }
+  }
+  Widget _buildTransactionCard({
+  required IconData icon,
+  required Color iconColor,
+  required String title,
+  required String description,
+  required double amount,
+  required String date,
+  required VoidCallback onEdit,
+  required VoidCallback onDelete,
+}) {
+  final Color amountColor = _getColorForType(amount >= 0 ? 'Income' : 'Expense');
+
+  return Card(
+    margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+    elevation: 2,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+    child: ListTile(
+      leading: CircleAvatar(
+        backgroundColor: iconColor.withOpacity(0.2),
+        child: Icon(icon, color: iconColor),
+      ),
+      title: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.blue[900], // Blue-black color for title
+                  ),
+                ),
+                const SizedBox(height: 2), // Spacing between title and description
+                Text(
+                  description,
+                  style: const TextStyle(fontSize: 14, color: Colors.grey),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                '\$${amount.abs().toStringAsFixed(2)}',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: amountColor, // Green for Income, Red for Expense
+                ),
+              ),
+              const SizedBox(height: 2), // Spacing between amount and date
+              Text(
+                date,
+                style: const TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+            ],
+          ),
+        ],
+      ),
+      trailing: PopupMenuButton<String>(
+        onSelected: (value) {
+          if (value == 'edit') onEdit();
+          if (value == 'delete') onDelete();
+        },
+        itemBuilder: (context) => [
+          const PopupMenuItem(
+            value: 'edit',
+            child: ListTile(
+              leading: Icon(Icons.edit),
+              title: Text('Edit'),
+            ),
+          ),
+          const PopupMenuItem(
+            value: 'delete',
+            child: ListTile(
+              leading: Icon(Icons.delete),
+              title: Text('Delete'),
+            ),
+          ),
+        ],
+        icon: const Icon(Icons.more_vert),
+      ),
+    ),
+  );
+}
+
+// Helper method to determine color based on transaction type
+Color _getColorForType(String? type) {
+  switch (type ?? 'Uncategorized') {
+    case 'Income':
+      return Colors.green;
+    case 'Expense':
+      return Colors.red;
+    default:
+      return const Color.fromARGB(255, 241, 97, 97); // Neutral fallback color
+  }
+}
+
 }

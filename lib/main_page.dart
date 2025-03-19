@@ -1,9 +1,12 @@
+// main.dart
 import 'package:flutter/material.dart';
+import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:provider/provider.dart';
 import 'Home/home_page.dart';
 import 'accounts/account_page.dart';
 import 'Analytics/analytics.dart';
-import 'package:google_nav_bar/google_nav_bar.dart';
 import 'category/category_page.dart';
+import 'provider/transactionProvider.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
@@ -13,39 +16,40 @@ class MainPage extends StatefulWidget {
 }
 
 class _HomePageState extends State<MainPage> {
-  int _selectedindex = 0;
-   void _onItemTapped(int index) {
+  int _selectedIndex = 0;
+
+  void _onItemTapped(int index) {
     setState(() {
-      _selectedindex = index;
+      _selectedIndex = index;
     });
   }
 
   List<Widget> _pages = [
-      DashboardScreen(),
-      AnalyticsPage(),
-      CategoryManagementPage(),
-      AccountPage(),
+    DashboardScreen(),
+    AnalyticsPage(),
+    CategoryManagementPage(),
+    AccountPage(),
   ];
 
   @override
   Widget build(BuildContext context) {
+    final transactionProvider = Provider.of<TransactionProvider>(context, listen: false);
+
     return Scaffold(
-      body: _pages[_selectedindex],
+      body: _pages[_selectedIndex],
       bottomNavigationBar: Stack(
         clipBehavior: Clip.none,
         alignment: Alignment.center,
         children: [
-          // Flat Container for Navigation Bar
           Container(
             height: 70,
             decoration: const BoxDecoration(
               color: Colors.white,
-              // borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
               boxShadow: [
                 BoxShadow(
                   color: Colors.black12,
                   blurRadius: 8,
-                  offset: const Offset(0, -2),
+                  offset: Offset(0, -2),
                 ),
               ],
             ),
@@ -68,13 +72,12 @@ class _HomePageState extends State<MainPage> {
               ),
             ),
           ),
-          // Rounded Floating Action Button
           Positioned(
-            bottom: 50, // Half of FAB height (56/2) to position it above the nav bar
+            bottom: 50,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.blue,
-                shape: BoxShape.circle, // Ensures the FAB is rounded
+                shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withOpacity(0.2),
@@ -84,10 +87,14 @@ class _HomePageState extends State<MainPage> {
                 ],
               ),
               child: FloatingActionButton(
-                onPressed: () {},
+                onPressed: () {
+                  transactionProvider.showTransactionDialog(
+                    context,
+                   );
+                },
                 backgroundColor: Colors.blue,
                 elevation: 0,
-                shape: const CircleBorder(), // Explicitly sets rounded shape
+                shape: const CircleBorder(),
                 child: const Icon(Icons.add, size: 32, color: Colors.white),
               ),
             ),
@@ -97,3 +104,4 @@ class _HomePageState extends State<MainPage> {
     );
   }
 }
+
