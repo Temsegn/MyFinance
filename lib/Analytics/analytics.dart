@@ -188,7 +188,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                               barRods: [
                                 BarChartRodData(
                                   toY: e.value,
-                                  color: _getColorForCategory(e.key),
+                                  color: _getColorForType('Income'),
                                   width: 20,
                                   borderRadius: const BorderRadius.vertical(
                                     top: Radius.circular(4),
@@ -294,7 +294,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                       final t = filteredTransactions[index];
                       return _buildTransactionCard(
                         icon: _getIconForCategory(t['category']),
-                        iconColor: _getColorForCategory(t['category']),
+                        iconColor: '${t['type']}' == 'Income' ? Colors.green : Colors.red,
                         title: t['title'],
                         description:
                             t['description'] ??
@@ -336,19 +336,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
       ),
     );
   }
-
-  Color _getColorForCategory(String? category) {
-    switch (category ?? 'Uncategorized') {
-      case 'Shopping':
-        return Colors.orange;
-      case 'Food':
-        return Colors.green;
-      case 'Transport':
-        return Colors.blue;
-      default:
-        return Colors.grey;
-    }
-  }
+ 
 
   IconData _getIconForCategory(String? category) {
     switch (category ?? 'Uncategorized') {
