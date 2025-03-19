@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:finance/main_page.dart';
+import 'package:finance/utils/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -45,7 +47,9 @@ class _LoginPageState extends State<LoginPage> {
         User? user = userCredential.user;
         if (user != null) {
           // Fetch role from Firestore
-          _navigateBasedOnRole(user.uid);
+          Navigator.of(context).pushReplacement(MaterialPageRoute(
+            builder: (context) => MainPage(),
+          ));
         }
       } on FirebaseAuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -55,23 +59,6 @@ class _LoginPageState extends State<LoginPage> {
         setState(() {
           _isLoading = false;
         });
-      }
-    }
-  }
-
-  void _navigateBasedOnRole(String uid) async {
-    DocumentSnapshot userDoc =
-        await FirebaseFirestore.instance.collection('users').doc(uid).get();
-
-    if (userDoc.exists) {
-      String role = userDoc['role'];
-
-      if (role == 'admin') {
-        Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const SignUpView()));
-      } else {
-        Navigator.of(context).pushReplacement(MaterialPageRoute(
-            builder: (context) => const SignUpView())); // Normal user screen
       }
     }
   }
@@ -131,7 +118,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEF08A),
+                          color: secondaryLight,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: TextFormField(
@@ -169,7 +156,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                       Container(
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEF08A),
+                          color: secondaryLight,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: TextFormField(
@@ -239,7 +226,7 @@ class _LoginPageState extends State<LoginPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(30),
                           ),
-                          backgroundColor: const Color(0xFFF9C51B),
+                          backgroundColor: secondaryLight,
                           fixedSize:
                               Size(media.width * 0.6, 67), // Dynamic width
                         ),
@@ -265,7 +252,7 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.of(context).push(MaterialPageRoute(
+                        Navigator.of(context).pushReplacement(MaterialPageRoute(
                           builder: (context) => const SignUpView(),
                         ));
                       },

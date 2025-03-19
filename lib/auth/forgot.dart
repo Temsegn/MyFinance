@@ -1,3 +1,4 @@
+import 'package:finance/utils/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -99,8 +100,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                     onPressed: _resetPassword,
                     child: const Text('Reset Password'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          const Color(0xFFF9C51B), // Consistent color
+                      backgroundColor: secondaryLight, // Consistent color
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(30),
                       ),
@@ -116,7 +116,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF9C51B), // Consistent color
+        backgroundColor: secondaryLight, // Consistent color
         elevation: 0,
         title: Text(
           'Forgot Password',
@@ -128,7 +128,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
           onPressed: _showForgotPasswordDialog,
           child: const Text('Forgot Password'),
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFF9C51B), // Consistent color
+            backgroundColor: secondaryLight, // Consistent color
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(30),
             ),

@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:finance/Home/home_page.dart';
 import 'package:finance/auth/login.dart';
+import 'package:finance/main_page.dart';
 import 'package:finance/utils/constants.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -56,7 +58,7 @@ class _SignUpViewState extends State<SignUpView> {
         if (user != null) {
           // Store user data in Firestore with a role
           await FirebaseFirestore.instance
-              .collection('users')
+              .collection('user_info')
               .doc(user.uid)
               .set({
             'first_name': _firstNameController.text.trim(),
@@ -71,6 +73,11 @@ class _SignUpViewState extends State<SignUpView> {
           );
 
           // Navigate based on role
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (context) => MainPage(),
+            ),
+          );
         }
       } on FirebaseAuthException catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
