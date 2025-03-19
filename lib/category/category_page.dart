@@ -14,7 +14,11 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
   final TextEditingController _categoryController = TextEditingController();
   String? _editingCategory;
 
-  void _showAddEditDialog(BuildContext context, CategoryProvider provider, {bool isEditing = false}) {
+  void _showAddEditDialog(
+    BuildContext context,
+    CategoryProvider provider, {
+    bool isEditing = false,
+  }) {
     if (!isEditing) {
       _categoryController.clear(); // Clear for new category
     }
@@ -85,45 +89,65 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
                 ),
                 const SizedBox(height: 20),
                 Expanded(
-                  child: provider.categories.isEmpty
-                      ? const Center(
-                          child: Text(
-                            'No categories yet. Add one to get started!',
-                            style: TextStyle(fontSize: 16, color: Colors.grey),
-                          ),
-                        )
-                      : ListView.builder(
-                          itemCount: provider.categories.length,
-                          itemBuilder: (context, index) {
-                            final category = provider.categories[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(vertical: 8),
-                              child: ListTile(
-                                title: Text(
-                                  category,
-                                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
-                                ),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit, color: Colors.blue),
-                                      onPressed: () {
-                                        _editingCategory = category;
-                                        _categoryController.text = category;
-                                        _showAddEditDialog(context, provider, isEditing: true);
-                                      },
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete, color: Colors.red),
-                                      onPressed: () => provider.deleteCategory(category),
-                                    ),
-                                  ],
-                                ),
+                  child:
+                      provider.categories.isEmpty
+                          ? const Center(
+                            child: Text(
+                              'No categories yet. Add one to get started!',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey,
                               ),
-                            );
-                          },
-                        ),
+                            ),
+                          )
+                          : ListView.builder(
+                            itemCount: provider.categories.length,
+                            itemBuilder: (context, index) {
+                              final category = provider.categories[index];
+                              return Card(
+                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                child: ListTile(
+                                  title: Text(
+                                    category,
+                                    style: const TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  trailing: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.edit,
+                                          color: Colors.blue,
+                                        ),
+                                        onPressed: () {
+                                          _editingCategory = category;
+                                          _categoryController.text = category;
+                                          _showAddEditDialog(
+                                            context,
+                                            provider,
+                                            isEditing: true,
+                                          );
+                                        },
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(
+                                          Icons.delete,
+                                          color: Colors.red,
+                                        ),
+                                        onPressed:
+                                            () => provider.deleteCategory(
+                                              category,
+                                            ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
                 ),
                 const SizedBox(height: 20),
                 Center(
@@ -132,10 +156,18 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 30,
+                        vertical: 15,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
-                    child: const Text('Add New Category', style: TextStyle(fontSize: 16)),
+                    child: const Text(
+                      'Add New Category',
+                      style: TextStyle(fontSize: 16),
+                    ),
                   ),
                 ),
               ],
@@ -146,3 +178,4 @@ class _CategoryManagementPageState extends State<CategoryManagementPage> {
     );
   }
 }
+

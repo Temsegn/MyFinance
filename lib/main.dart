@@ -11,6 +11,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
       ],
       child: const MaterialApp(
+        debugShowCheckedModeBanner: false,
         home: MainPage(),
       ),
     ),

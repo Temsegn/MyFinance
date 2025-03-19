@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_nav_bar/google_nav_bar.dart';
+import 'package:myfinance/Home/notification_page.dart';
 
 
 class DashboardScreen extends StatefulWidget {
@@ -74,9 +75,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const Text(
               "Hey, Jacob!",
               style: TextStyle(
-                color: Colors.blue,
+                color: Colors.blue, 
                 fontSize: 18,
-                fontWeight: FontWeight.bold,
+                fontWeight: FontWeight.bold, 
               ),
             ),
           ],
@@ -84,7 +85,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications, color: Color.fromARGB(255, 73, 176, 205)),
-            onPressed: () {},
+            onPressed: () {
+                Navigator.push(context, 
+                 MaterialPageRoute(builder: (context)=>NotificationsPage())
+                );
+            },
           ),
         ],
       ),

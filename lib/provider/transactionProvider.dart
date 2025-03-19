@@ -83,6 +83,9 @@ class _TransactionDialogState extends State<TransactionDialog> {
     super.dispose();
   }
 
+
+  
+
   void _saveTransaction() {
     if (_formKey.currentState!.validate()) {
       final transaction = {

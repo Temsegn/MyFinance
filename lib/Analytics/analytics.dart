@@ -274,13 +274,14 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                 ),
                 const SizedBox(height: 10),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+                  mainAxisAlignment: MainAxisAlignment.start,
+                   children: [
                     _buildFilterButton('All'),
+                    SizedBox(width: 20,),
                     Row(
                       children: [
                         _buildFilterButton('Income'),
-                        const SizedBox(width: 16),
+                        const SizedBox(width: 20),
                         _buildFilterButton('Expense'),
                       ],
                     ),

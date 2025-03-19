@@ -59,7 +59,9 @@ class ProfileScreen extends StatelessWidget {
                   IconButton(
                     icon: Icon(Icons.arrow_back_ios_new_rounded, 
                       size: 20.r, color: const Color(0xFF64748B)),
-                    onPressed: () {},
+                    onPressed: () {
+                      //  Navigator.pop(context);
+                    },
                   ),
                   Text('Profile', 
                     style: Theme.of(context).textTheme.headlineSmall),
